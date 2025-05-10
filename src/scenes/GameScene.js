@@ -83,7 +83,6 @@ export default class GameScene extends Phaser.Scene {
 			this.char.setVelocity(200, 200)
 		} else {
 			this.char.setVelocity(0, 200)
-			this.char.
 		}
 		if (this.cursor.up.isDown) {
 			this.char.setVelocity(0, -200)
