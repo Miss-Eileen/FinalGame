@@ -16,10 +16,16 @@ export default class GameScene extends Phaser.Scene {
 		this.jump = 0;
 		this.score = 0;
 		this.scorelabel=undefined
+		this.isJumping = false; // Add this line
+		this.background = undefined
 	}
 
 	preload() {
 		this.load.spritesheet("char", "../../public/assets/kenney_platformer-art-deluxe/BasePack/Player/p1_stand.png", {
+			frameWidth: 64,
+			frameHeight: 92,
+		})
+		this.load.spritesheet("char-jump", "../../public/assets/kenney_platformer-art-deluxe/BasePack/Player/p1_jump.png", {
 			frameWidth: 64,
 			frameHeight: 92,
 		})
@@ -44,13 +50,29 @@ export default class GameScene extends Phaser.Scene {
 	}
 	
 	createAnimation() {
+		
 		this.anims.create({
-			key: "left",
-
-		})
+			key: "idle",
+			frames: this.anims.generateFrameNumbers("char", { start: 0, end: 0 }),
+			frameRate: 10,
+			repeat: -1
+		});
+		
+		this.anims.create({
+			key: "jump",
+			frames: this.anims.generateFrameNumbers("char-jump", { start: 0, end: 0 }),
+			frameRate: 10,
+			repeat: 0,
+			// Add this to automatically switch back to idle when jump animation completes
+			onComplete: (sprite) => {
+				sprite.anims.play('idle');
+			}
+		});
 	}
 
 	create() {
+		this.createAnimation();
+		this.load.image ('background')
 		this.ground = this.physics.add.staticGroup()
 		this.background = this.add.image(240, 320, "bg")
 		this.background.setScale(3)
@@ -71,42 +93,50 @@ export default class GameScene extends Phaser.Scene {
 		this.scoreLabel = this.add.text(10, 10, 'Score: 0', {
 			color: 'white',
 			backgroundColor: 'black'
-		  }).setDepth(1);
+		}).setDepth(1);
 	}
 
 	update(time) {
+		// Check if character is on the ground
+		const onGround = this.char.body.touching.down || this.char.body.blocked.down;
+		
+		// Reset jump ability when landing
+		if (onGround && this.isJumping) {
+			this.isJumping = false;
+			// Play idle animation when landing
+			this.char.anims.play('idle', true);
+		}
+		
+		// Handle left-right movement
 		if (this.cursor.left.isDown) {
-			this.char.setVelocity(-200, 200)
-			this.char.setFlipX(true)
+			this.char.setVelocityX(-200);
+			this.char.setFlipX(true);
 		} else if (this.cursor.right.isDown) {
-			this.char.setFlipX(false)
-			this.char.setVelocity(200, 200)
+			this.char.setVelocityX(200);
+			this.char.setFlipX(false);
 		} else {
-			this.char.setVelocity(0, 200)
-		}
-		if (this.cursor.up.isDown) {
-			this.char.setVelocity(0, -200)
-			this.jump += 1;
-
+			this.char.setVelocityX(0);
 		}
 		
+		// Jump only if on ground and not already jumping
+		if (this.cursor.up.isDown && onGround && !this.isJumping) {
+			this.char.setVelocityY(-300);
+			this.char.anims.play('jump', true);
+			this.isJumping = true;
+		}
 		
-		// TAMBAH KODE UNTUK CEK KALAU SUDAH LONCAT ATAU BELUM, TERUS KALAU SUDAH LONCAT, JIKA SENTUH GROUND MAKA AKAN MATI
+		// Apply gravity when in air, but don't override jump velocity right away
+		if (!onGround && this.char.body.velocity.y > -100) {
+			// Only apply gravity when falling or at peak of jump
+			this.char.setVelocityY(200);
+		}
 		
-		// if (this.jump > 1 && this.physics.collide(this.char,this.ground)) {
-		// 	this.char.destroy(true);
-		// }
-		// this.input.keyboard.on("keydown-RIGHT", () => {
-		// 	this.char.setVelocity(200,200)
-		// 	this.char.flipX = false
-		// })
-		// this.input.keyboard.on("keydown-LEFT", () => {
-		// 	this.char.setVelocity(-200,200)
-		// 	this.char.flipX = true
-		// })
-		// this.input.keyboard.on("keydown-UP",() => {
-		// 	this.char.setVelocity(0,-200)
-		// })
+		// No need to constantly play jump animation
+		if (this.isJumping && !this.char.anims.isPlaying) {
+			this.char.anims.play('jump', true);
+		} else if (onGround && !this.isJumping && !this.char.anims.isPlaying) {
+			this.char.anims.play('idle', true);
+		}
 	}
 	collectCoin(char,coin)
 	{
