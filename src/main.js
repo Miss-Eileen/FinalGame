@@ -1,4 +1,4 @@
-import Phaser from 'phaser'
+import Phaser, { Game } from 'phaser'
 
 import GameScene from './scenes/GameScene'
 import GameOver from './scenes/GameOver'
@@ -15,7 +15,7 @@ const config = {
 			gravity: { y: 200 },
 		},
 	},
-	scene: [level2],
+	scene: [GameScene, level2, GameOver],
 }
 
 export default new Phaser.Game(config)
